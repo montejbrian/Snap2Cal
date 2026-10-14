@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snap2Cal — Scope Companion</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --amber: #f59e0b;
+      --green: #10b981;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 2.25rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .lead { font-size: 1.15rem; color: var(--text-muted); }
+    
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    h2 { font-size: 1.3rem; margin-bottom: 1rem; color: #e2e8f0; display: flex; align-items: center; gap: 0.5rem; }
+    
+    /* Interactive Diagram (SVG) */
+    .flow-diagram {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem 1rem;
+      margin: 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .flow-steps {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      width: 100%;
+    }
+    .flow-node {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      width: 180px;
+      text-align: center;
+      position: relative;
+    }
+    .flow-node.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    }
+    .flow-node.amber-node {
+      border-color: var(--amber);
+    }
+    .flow-node .step-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    .flow-node h3 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+    .flow-node p { font-size: 0.8rem; color: var(--text-muted); }
+    .flow-arrow {
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+    }
+
+    /* Tabs / Reveals for Scope Boundaries */
+    .boundary-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .tab-btn {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
+    .tab-content {
+      display: none;
+      padding: 1rem;
+      background: #162032;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent);
+    }
+    .tab-content.active { display: block; }
+    .tab-content.later { border-left-color: var(--text-muted); }
+    .tab-content.cut { border-left-color: #ef4444; }
+
+    ul { padding-left: 1.25rem; margin-top: 0.5rem; }
+    li { margin-bottom: 0.5rem; }
+    strong { color: #f1f5f9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">Scope Companion Document</div>
+      <h1>Snap2Cal</h1>
+      <p class="lead">Screenshot in → structured event out → instant .ics download.</p>
+    </header>
+
+    <div class="card">
+      <h2>⚡ The Unique Kernel</h2>
+      <p>Instant event parsing with transparent, human-in-the-loop validation: dropping an image initiates an immediate shimmering placeholder, followed by high-contrast editable inputs that explicitly highlight missing or ambiguous fields (in amber) for quick human completion rather than silent AI hallucination.</p>
+    </div>
+
+    <div class="card">
+      <h2>🔄 The Core Loop & Interactive Flow</h2>
+      <div class="flow-diagram">
+        <div class="flow-steps">
+          <div class="flow-node">
+            <div class="step-num">Step 1</div>
+            <h3>Drop Screenshot</h3>
+            <p>Flyer or email image into SPA dropzone</p>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-node active">
+            <div class="step-num">Step 2</div>
+            <h3>Skeleton Shimmer</h3>
+            <p>Immediate feedback during multimodal parsing</p>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-node amber-node">
+            <div class="step-num">Step 3</div>
+            <h3>Review & Edit</h3>
+            <p>High-contrast inputs; amber alert on missing data</p>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-node">
+            <div class="step-num">Step 4</div>
+            <h3>Download .ICS</h3>
+            <p>One-click standard calendar file export</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🎯 Scope Boundaries</h2>
+      <div class="boundary-tabs">
+        <button class="tab-btn active" onclick="showTab('in-scope', this)">Now (POC Boundary)</button>
+        <button class="tab-btn" onclick="showTab('later', this)">Later</button>
+        <button class="tab-btn" onclick="showTab('cut', this)">Explicitly Cut</button>
+      </div>
+
+      <div id="in-scope" class="tab-content active">
+        <ul>
+          <li><strong>Single-Page Web App (SPA):</strong> Clean, responsive desktop/mobile-friendly UI.</li>
+          <li><strong>Drag-and-Drop Zone:</strong> Supports standard image formats (PNG, JPG, WEBP).</li>
+          <li><strong>Skeleton Shimmer Loader:</strong> Instant visual feedback during parsing.</li>
+          <li><strong>Structured Field Extraction:</strong> Event Title, Date, Start Time, End Time, Location, Description.</li>
+          <li><strong>High-Contrast Editable Card:</strong> Direct input editing with amber warnings for missing fields.</li>
+          <li><strong>RFC 5545 .ics Export:</strong> Universal calendar export ready to open in any calendar client.</li>
+        </ul>
+      </div>
+
+      <div id="later" class="tab-content later">
+        <ul>
+          <li><strong>Multi-event images:</strong> Extracting multi-day conferences or multiple dates from one flyer.</li>
+          <li><strong>Direct OAuth Sync:</strong> Google Calendar API or Microsoft Graph direct pushes.</li>
+          <li><strong>Timezone Geocoding:</strong> Auto-resolving timezone offsets from physical city names.</li>
+          <li><strong>Browser Extension:</strong> Right-click image directly to Snap2Cal.</li>
+        </ul>
+      </div>
+
+      <div id="cut" class="tab-content cut">
+        <ul>
+          <li><strong>No User Accounts / Auth:</strong> Zero sign-up overhead; pure instant client utility.</li>
+          <li><strong>No Database / Server Storage:</strong> Ephemeral session; protects user privacy and reduces attack surface.</li>
+          <li><strong>No Recurring Events:</strong> Only single-instance events supported in POC.</li>
+          <li><strong>No Mobile App Store Build:</strong> Web application only.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>
