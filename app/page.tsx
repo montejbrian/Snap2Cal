@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { generateICS, getIcsFilename } from "@/lib/ics";
 
 export interface EventData {
   title: string | null;
@@ -11,6 +12,27 @@ export interface EventData {
   description: string | null;
 }
 
+const COMMON_TIMEZONES = [
+  "Africa/Nairobi",
+  "Africa/Cairo",
+  "Africa/Johannesburg",
+  "Africa/Lagos",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Sao_Paulo",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "UTC",
+];
+
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -19,18 +41,22 @@ export default function Home() {
   const [isParsing, setIsParsing] = useState(false);
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [timezone, setTimezone] = useState<string>("");
-  const [isEditingTimezone, setIsEditingTimezone] = useState(false);
+  const [isChangingTz, setIsChangingTz] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [validationWarning, setValidationWarning] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize timezone from browser
+  // Initialize timezone from browser and log to console
   useEffect(() => {
     try {
-      const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      setTimezone(userTz || "UTC");
-    } catch {
+      const resolved = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const initialTz = resolved || "UTC";
+      setTimezone(initialTz);
+      console.log("Snap2Cal timezone initialized:", initialTz);
+    } catch (e) {
+      console.warn("Could not resolve browser timezone, defaulting to UTC:", e);
       setTimezone("UTC");
     }
   }, []);
@@ -39,6 +65,8 @@ export default function Home() {
   const extractEvent = async (file: File) => {
     setIsParsing(true);
     setErrorMessage(null);
+    setValidationWarning(null);
+    setDownloadSuccess(false);
     setEventData(null);
 
     const formData = new FormData();
@@ -112,7 +140,6 @@ export default function Home() {
   // Clipboard paste listener (Ctrl/Cmd+V)
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
-      // Don't intercept if user is typing in an input
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
@@ -177,7 +204,9 @@ export default function Home() {
     setEventData(null);
     setIsParsing(false);
     setErrorMessage(null);
+    setValidationWarning(null);
     setDownloadSuccess(false);
+    setIsChangingTz(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -189,6 +218,51 @@ export default function Home() {
       ...eventData,
       [field]: value,
     });
+    setValidationWarning(null);
+  };
+
+  // Step 6: Download .ics calendar file
+  const handleDownloadIcs = () => {
+    if (!eventData) return;
+
+    if (!eventData.date || !eventData.date.trim()) {
+      setValidationWarning("Please enter an event date (YYYY-MM-DD) before downloading.");
+      return;
+    }
+    if (!eventData.startTime || !eventData.startTime.trim()) {
+      setValidationWarning("Please enter a start time (HH:mm) before downloading.");
+      return;
+    }
+
+    try {
+      const icsString = generateICS({
+        title: eventData.title || "Event",
+        date: eventData.date.trim(),
+        startTime: eventData.startTime.trim(),
+        endTime: eventData.endTime?.trim() || null,
+        location: eventData.location?.trim() || null,
+        description: eventData.description?.trim() || null,
+        timezone: timezone || "UTC",
+      });
+
+      const blob = new Blob([icsString], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const filename = getIcsFilename(eventData.title);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 4000);
+    } catch (err) {
+      console.error("Failed to generate ICS:", err);
+      alert("Error generating calendar file. Please check date and time formats.");
+    }
   };
 
   return (
@@ -280,7 +354,7 @@ export default function Home() {
           <div className="w-full bg-white rounded-lg border border-slate-200 shadow-sm p-6 space-y-5 animate-pulse">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="h-5 bg-slate-200 rounded w-1/3"></div>
-              <div className="h-4 bg-slate-200 rounded w-20"></div>
+              <div className="h-4 bg-slate-200 rounded w-28"></div>
             </div>
             <div className="space-y-3">
               <div className="h-4 bg-slate-200 rounded w-1/4"></div>
@@ -330,33 +404,24 @@ export default function Home() {
               </div>
             )}
 
+            {/* Validation warning */}
+            {validationWarning && (
+              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{validationWarning}</span>
+              </div>
+            )}
+
             {/* Card Header & Timezone Badge */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Event Details
+                Event Card
               </span>
-              <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                <span>TZ:</span>
-                {isEditingTimezone ? (
-                  <input
-                    type="text"
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
-                    onBlur={() => setIsEditingTimezone(false)}
-                    autoFocus
-                    className="px-1.5 py-0.5 border border-slate-300 rounded text-xs text-slate-800 font-mono"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingTimezone(true)}
-                    className="font-mono bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded text-slate-700 cursor-pointer transition-colors"
-                    title="Click to edit timezone"
-                  >
-                    {timezone}
-                  </button>
-                )}
-              </div>
+              <span className="text-xs text-slate-400">
+                Click any field to edit
+              </span>
             </div>
 
             {/* Editable Form Fields */}
@@ -373,7 +438,7 @@ export default function Home() {
                   placeholder="Event title..."
                   className={`w-full px-3 py-2 text-sm text-slate-900 bg-white rounded-lg border outline-none transition-colors ${
                     !eventData.title
-                      ? "border-amber-500 focus:ring-1 focus:ring-amber-500"
+                      ? "border-amber-500 bg-amber-50/10 focus:ring-1 focus:ring-amber-500"
                       : "border-slate-300 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
                   }`}
                 />
@@ -423,10 +488,50 @@ export default function Home() {
                     type="text"
                     value={eventData.endTime || ""}
                     onChange={(e) => updateField("endTime", e.target.value)}
-                    placeholder="HH:mm (e.g. 20:00)"
+                    placeholder="HH:mm (e.g. 21:00)"
                     className="w-full px-3 py-2 text-sm text-slate-900 bg-white rounded-lg border border-slate-300 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none transition-colors font-mono"
                   />
                 </div>
+              </div>
+
+              {/* Timezone affordance label & dropdown */}
+              <div className="pt-0.5">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <span>Timezone:</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsChangingTz(!isChangingTz)}
+                    className="font-mono text-indigo-600 hover:text-indigo-800 underline underline-offset-2 cursor-pointer font-medium"
+                    title="Click to change timezone"
+                  >
+                    {timezone} · change
+                  </button>
+                </div>
+
+                {isChangingTz && (
+                  <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-slate-700">
+                      Select Event Timezone:
+                    </label>
+                    <select
+                      value={timezone}
+                      onChange={(e) => {
+                        setTimezone(e.target.value);
+                        setIsChangingTz(false);
+                      }}
+                      className="w-full px-2.5 py-1.5 text-xs text-slate-800 bg-white rounded border border-slate-300 font-mono outline-none"
+                    >
+                      {!COMMON_TIMEZONES.includes(timezone) && (
+                        <option value={timezone}>{timezone} (detected)</option>
+                      )}
+                      {COMMON_TIMEZONES.map((tz) => (
+                        <option key={tz} value={tz}>
+                          {tz} {tz === timezone ? "✓" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Location */}
@@ -470,23 +575,28 @@ export default function Home() {
 
               <button
                 type="button"
-                id="download-ics-btn"
-                className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors cursor-pointer text-center order-1 sm:order-2 flex items-center justify-center gap-2"
+                onClick={handleDownloadIcs}
+                className={`w-full sm:w-auto px-6 py-2.5 font-medium text-sm rounded-lg shadow-sm transition-all cursor-pointer text-center order-1 sm:order-2 flex items-center justify-center gap-2 ${
+                  downloadSuccess
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                }`}
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.5V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                  />
-                </svg>
-                Download .ics
+                {downloadSuccess ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Downloaded!
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.5V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Download .ics
+                  </>
+                )}
               </button>
             </div>
           </div>
