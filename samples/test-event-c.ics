@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Snap2Cal//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:e11b4222-0936-473c-92bb-0dcfdce64921@snap2cal
+DTSTAMP:20261014T202010Z
+DTSTART:20261115T180000Z
+DTEND:20261116T000000Z
+SUMMARY:AI Developers Conference & Community Workshop
+LOCATION:Moscone Center\, 747 Howard St\, San Francisco\, CA 94103
+DESCRIPTION:A comprehensive deep dive into multimodal AI agents\, autonomou
+ s planning workflows\, prompt architectures\, and production-grade system 
+ deployments with real-world industry case studies and hands-on labs! 🚀 
+ Experience café networking sessions.
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR
